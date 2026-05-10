@@ -1,0 +1,48 @@
+{
+  "optimal_threshold": 0.3346,
+  "monthly_churn_rate": 0.0899,
+  "avg_lifetime_months": 11.12,
+  "max_voucher_abs": 200.0,
+  "risk_tiers": [
+    {
+      "label": "No Risk",
+      "p_low": 0.0,
+      "p_high": 0.3,
+      "voucher_pct": 0.0,
+      "save_rate": 0.0
+    },
+    {
+      "label": "Medium",
+      "p_low": 0.3,
+      "p_high": 0.5,
+      "voucher_pct": 0.1,
+      "save_rate": 0.25
+    },
+    {
+      "label": "High",
+      "p_low": 0.5,
+      "p_high": 0.7,
+      "voucher_pct": 0.2,
+      "save_rate": 0.4
+    },
+    {
+      "label": "Critical",
+      "p_low": 0.7,
+      "p_high": 1.01,
+      "voucher_pct": 0.35,
+      "save_rate": 0.2
+    }
+  ],
+  "segment_threshold_adj": {
+    "Champions": -0.05,
+    "At-Risk": 0.0,
+    "Loyal Low-Rev": 0.05,
+    "Dormant": 0.1
+  },
+  "n_users_total": 907471,
+  "n_users_eligible": 253548,
+  "n_users_intervene": 4294,
+  "total_campaign_cost": 345953.48,
+  "expected_net_benefit": 766843.26,
+  "roi_pct": 221.7
+}

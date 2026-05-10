@@ -1,8 +1,8 @@
 {
   "n_rows": 1963891,
-  "n_cols": 59,
+  "n_cols": 60,
   "n_snapshots": 2,
-  "feature_count": 53,
+  "feature_count": 54,
   "feature_names": [
     "bd",
     "bd_missing",
@@ -40,6 +40,7 @@
     "cancel_to_plandays_ratio",
     "active_no_cancel_flag",
     "days_since_last_cancel",
+    "has_ever_cancelled",
     "payment_method_nunique",
     "days_last_txn_to_expire",
     "recency_to_plan_ratio",

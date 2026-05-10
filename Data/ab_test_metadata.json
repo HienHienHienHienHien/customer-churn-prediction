@@ -1,0 +1,31 @@
+{
+  "campaign_id": "campaign_2017_02_retention_backtest",
+  "population": "February 2017 non-Stable (actual labels from train_v2.csv)",
+  "n_full_feb": 970960,
+  "n_targeted": 817388,
+  "baseline_renewal": 0.8934,
+  "n_required_per_arm": 2883,
+  "arms": {
+    "C": 0.2,
+    "T_A": 0.4,
+    "T_B": 0.4
+  },
+  "mde": 0.02,
+  "alpha": 0.05,
+  "power": 0.8,
+  "results": {
+    "T_A": {
+      "p": 0.56018,
+      "lift": -0.0001
+    },
+    "T_B": {
+      "p": 0.70627,
+      "lift": -0.0005
+    }
+  },
+  "incremental_lift_ta": -0.00014,
+  "cpru": null,
+  "net_benefit": -1733215.79,
+  "roi_pct": -104.6,
+  "data_note": "April 2017 transaction data not available. March 2017 population outcomes cannot be observed. February 2017 non-Stable population used as proxy backtest."
+}

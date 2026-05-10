@@ -1,0 +1,42 @@
+{
+  "val_churn_rate": 0.089942,
+  "expected_lifetime_mo": 11.12,
+  "optimal_threshold": 0.0538,
+  "max_voucher": 200.0,
+  "quantile_tiers": {
+    "Q1": 0.0255,
+    "Q2": 0.0396,
+    "Q3": 0.0599
+  },
+  "tier_config": {
+    "Stable": {
+      "voucher_pct": 0.0,
+      "base_save_rate": 0.0
+    },
+    "Medium": {
+      "voucher_pct": 0.05,
+      "base_save_rate": 0.08
+    },
+    "High": {
+      "voucher_pct": 0.1,
+      "base_save_rate": 0.15
+    },
+    "Critical": {
+      "voucher_pct": 0.2,
+      "base_save_rate": 0.07
+    }
+  },
+  "behavior_weights": {
+    "behavior_auto_renew": 0.1247,
+    "behavior_cancel": -0.25,
+    "behavior_has_log": -0.0213,
+    "behavior_active_no_cancel": -0.25,
+    "behavior_high_total_secs": -0.0211,
+    "behavior_long_plan": -0.25
+  },
+  "n_total": 907471,
+  "n_targets": 84420,
+  "total_cost": 2517531.28,
+  "net_benefit": 1126257.83,
+  "roi_pct": 44.7
+}
