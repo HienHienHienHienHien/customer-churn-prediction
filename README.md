@@ -10,10 +10,10 @@
 | Name | Student ID |
 |---|---|
 | Doan Tung Lam | 11230555 |
-| Nguyen Manh Cuong | 112305xx |
+| Nguyen Manh Cuong | 11230521 |
 | Tran Thu Hien | 11230534 |
 | Do Ha Linh | 11230557 |
-| Pham Minh Bao Ngoc | 112305xx |
+| Pham Minh Bao Ngoc | 11230576 |
 
 ---
 
