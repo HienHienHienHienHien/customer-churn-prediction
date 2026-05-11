@@ -27,7 +27,8 @@ The primary objective is not competition leaderboard performance but a **deploya
 
 The goal is not only predicting churn, but determining:
 
-```Which customers should be targeted, how much should be spent, and whether the campaign generates positive ROI.
+```
+Which customers should be targeted, how much should be spent, and whether the campaign generates positive ROI.
 ```
 
 **Business Questions**
@@ -57,7 +58,6 @@ Raw KKBox Data
 
 ## 2. Business Problem
 
-```text
 Traditional churn projects stop at probability prediction:
 
 P(churn) = 0.08
@@ -74,7 +74,6 @@ Expected Profit =
 (Churn Probability × CLV × Save Rate) − Retention Cost  
 
 Only customers with positive expected profit are selected for targeting.
-```
 
 ---
 
@@ -175,7 +174,7 @@ A user is labeled as churned if they fail to renew within **30 days** after memb
 
 ---
 
-## Step 1 — Data Preprocessing
+### Step 1 — Data Preprocessing
 
 **Notebook:** `01_Preprocessing.ipynb`
 
