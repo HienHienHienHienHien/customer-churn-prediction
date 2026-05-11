@@ -17,60 +17,177 @@
 
 ---
 
-## Project Overview
+## 1. Project Overview
 
-This project builds an end-to-end **churn prediction and retention optimization system** for **KKBox**, a music streaming platform operating in Taiwan, Hong Kong, Japan, and Southeast Asia. The dataset comes from the [WSDM Cup 2018 Kaggle competition](https://www.kaggle.com/c/kkbox-churn-prediction-challenge).
+This project builds an end-to-end **customer retention optimization framework** for **KKBox**, a music streaming platform operating in Taiwan, Hong Kong, Japan, and Southeast Asia. 
+
+Using the [WSDM Cup 2018 Kaggle competition](https://www.kaggle.com/c/kkbox-churn-prediction-challenge) dataset, 
 
 The primary objective is not competition leaderboard performance but a **deployable business retention framework** — one that translates raw churn probabilities into per-customer voucher decisions grounded in Customer Lifetime Value (CLV) and economic break-even logic. The methodology is inspired by Bryan Gregory's first-place solution (LogLoss 0.07974).
 
-### Business motivation
+The goal is not only predicting churn, but determining:
 
-KKBox loses approximately 9% of its subscriber base every month. At a median CLV of **$1,434 per user**, every 1,000 unnecessary churners represents $1.43M of lost future revenue. The platform faces a churn rate 2–4× higher than comparable Western streaming services, driven by competitive free-tier alternatives and lower willingness-to-pay in emerging Asian markets.
+```Which customers should be targeted, how much should be spent, and whether the campaign generates positive ROI.
+```
+
+**Business Questions**
+
+| Business Question | Project Component |
+|---|---|
+| Which users are likely to churn? | Churn prediction model |
+| How risky is each user? | Risk tier segmentation |
+| Which users are financially worth saving? | CLV and break-even analysis |
+| What retention action should be taken? | Voucher recommendation engine |
+| Is the campaign likely to create measurable lift? | A/B testing backtest and simulation |
+
+**Final workflow**
+
+```text
+Raw KKBox Data
+    → Data Cleaning
+    → Feature Engineering
+    → Churn Modeling
+    → Probability Calibration
+    → Retention Decisioning
+    → A/B Testing
+    → Business Recommendation
+```
 
 ---
 
-## Dataset
+## 2. Business Problem
 
-**Source:** [KKBox WSDM Cup 2018](https://www.kaggle.com/c/kkbox-churn-prediction-challenge) — place raw files in `Data/` before running.
+```text
+Traditional churn projects stop at probability prediction:
 
-| File | Rows | Description |
-|---|---|---|
-| `transactions.parquet` | 547,746 | Subscriptions Jan 2015 – Jan 2017 |
-| `transactions_v2.csv` | 1,431,009 | Additional transactions Jan – Mar 2017 |
-| `members_v3.csv` | 6,769,473 | User demographics and registration |
-| `user_logs.parquet` | 106,543 | Historical daily listening (22,443 users) |
-| `user_logs_v2.parquet` | 396,362 | March 2017 listening (316,345 users) |
+P(churn) = 0.08
 
-**Key data characteristics:**
-- 80% of registered accounts never transacted — a large "dark user" population
-- Log data covers only 1.1% of training users — most listening features are zero-filled
-- Dates stored as YYYYMMDD integers requiring parsing
-- 8,983 rows removed with negative expiry gaps (data entry errors)
+However, retention campaigns require economic decision-making.   
+This project extends churn modeling into a deployable retention system by combining:
+
+- Churn probability
+- Customer Lifetime Value (CLV)
+- Voucher cost
+- Expected retention uplift
+
+Expected Profit =
+(Churn Probability × CLV × Save Rate) − Retention Cost  
+
+Only customers with positive expected profit are selected for targeting.
+```
 
 ---
 
-## Pipeline
+## 3. Key Results
 
+### Modeling Performance
+
+| Model | Validation AUC | Validation LogLoss | Role |
+|---|---:|---:|---|
+| Logistic Regression | 0.702 | 0.606 | Baseline |
+| LightGBM | 0.766 | 0.290 | Best single model |
+| XGBoost | 0.766 | 0.551 | Alternative boosting model |
+| 95% LightGBM + 5% XGBoost | 0.769 | — | Best ensemble |
+| Ensemble + Isotonic Calibration | 0.769 | 0.257 | Final model |
+
+### Retention Campaign Results
+
+| Metric | Value |
+|---|---:|
+| March inference users | 907,471 |
+| Users targeted | 84,420 |
+| Campaign cost | $2,517,531 |
+| Expected revenue retained | $3,643,789 |
+| Net benefit | $1,126,258 |
+| ROI | 44.7% |
+
+### A/B Testing Results
+
+| Evaluation | Result |
+|---|---|
+| February backtest | No statistically significant lift |
+| March simulation | Significant lift across 5 random seeds |
+| Minimum viable Critical-tier save rate | 5% |
+
+---
+
+## 4. Dataset
+
+The dataset is based on the **WSDM Cup 2018 KKBox Churn Prediction Challenge**.
+
+Raw data should be placed in the `Data/` directory.
+
+### Expected Input Files
+
+| File| Description |
+|---|---|
+| `transactions.parquet` | Subscriptions Jan 2015 – Jan 2017 |
+| `transactions_v2.csv` | Additional transactions Jan – Mar 2017 |
+| `members_v3.csv` | User demographics and registration |
+| `user_logs.parquet` | Historical daily listening (22,443 users) |
+| `user_logs_v2.parquet` | March 2017 listening (316,345 users) |
+
+
+### Key Data Challenges
+
+- Dates are stored as `YYYYMMDD` integers and require parsing.
+- Some transaction rows have invalid expiration logic and must be removed.
+- Most registered members never transact, creating a large inactive-user population.
+- Listening-log coverage is limited, so transaction features are more reliable than log features.
+- March users require future April outcomes, which are not available in the public dataset.
+
+---
+
+## 5. Project Pipeline
+
+```mermaid
+flowchart TD
+    A["Raw KKBox Data<br/>transactions + members + user_logs"] --> B["01_Preprocessing.ipynb<br/>Clean, parse, merge, export parquet"]
+
+    B --> C1["Train Snapshot<br/>January 2017<br/>992,931 users<br/>Churn rate: 6.39%"]
+    B --> C2["Validation Snapshot<br/>February 2017<br/>970,960 users<br/>Churn rate: 8.99%"]
+    B --> C3["Inference Snapshot<br/>March 2017<br/>907,471 users"]
+
+    C1 --> D["02_FeatureEngineering.ipynb<br/>54 features<br/>Member + Transaction + Log"]
+    C2 --> D
+    C3 --> D
+
+    D --> E["03_Modeling.ipynb<br/>Logistic Regression<br/>LightGBM<br/>XGBoost<br/>Ensemble"]
+
+    E --> F["Final Model<br/>95% LightGBM + 5% XGBoost<br/>Isotonic Calibration<br/>AUC 0.769<br/>LogLoss 0.257"]
+
+    F --> G["04_RetentionDecision.ipynb<br/>Risk Tier + CLV + ROI"]
+
+    G --> H["05_AB_Testing.ipynb<br/>February Backtest<br/>March Simulation"]
+
+    H --> I["Business Outputs<br/>retention_targets.csv<br/>campaign_tracking_template.csv<br/>ab_backtest_results.csv"]
 ```
-01_Preprocessing
-        ↓
-02_FeatureEngineering
-        ↓
-03_Modeling
-        ↓
-04_RetentionDecision
-        ↓
-05_AB_Testing
-```
 
-### Step 1 — Preprocessing (`01_Preprocessing.ipynb`)
+---
 
-Loads and cleans all five raw files. Key decisions:
+## 6. Churn Definition
 
-- Both transaction files merged into 1,969,768 clean rows after removing corrupted entries
-- Age (`bd`) clipped to [10, 80]; missing values imputed and flagged
-- Log files kept as **two separate branches** — only 18% user overlap confirms they are distinct cohorts, not continuous history
-- `registration_init_time` decomposed into year/month/day components
+A user is labeled as churned if they fail to renew within **30 days** after membership expiration, following the official WSDM transaction reconstruction methodology implemented in `WSDMChurnLabeller.scala`.
+
+---
+
+## 7. Methodology
+
+---
+
+## Step 1 — Data Preprocessing
+
+**Notebook:** `01_Preprocessing.ipynb`
+
+Raw transaction, member, and listening-log data were cleaned and standardized into optimized parquet files.
+
+Key preprocessing tasks:
+
+- Merge historical and incremental transactions
+- Parse YYYYMMDD date fields
+- Remove corrupted subscription records
+- Handle invalid demographic values
+- Separate historical and March listening cohorts
 
 **Output:** 5 clean parquet files + preprocessing metadata JSON
 
@@ -88,10 +205,6 @@ Constructs 54 behavioral and transactional features using strict temporal constr
 | Validation | Feb 2017 | 970,960 | 8.99% | `train_v2.csv` (official) |
 | Inference | Mar 2017 | 907,471 | ~6.7% (implied) | `sample_submission_v2.csv` |
 
-**Why time-based splitting?** A random split would allow the model to learn from future behavior (e.g. a user's March transactions) to predict January churn — leaking future data into training and producing unrealistically high accuracy metrics.
-
-**Label construction (Scala-aligned):** Each user's effective membership state is reconstructed at the cutoff using `sort → groupby().last()`. A user is labelled `is_churn = 1` if they do not renew within 30 days of expiry.
-
 **Feature groups:**
 
 | Group | Count | Key examples |
@@ -100,11 +213,8 @@ Constructs 54 behavioral and transactional features using strict temporal constr
 | Transaction | 30 | `cancel_rate`, `last_is_cancel`, `auto_renew_rate`, `days_last_txn_to_expire` |
 | Log | 13 | `total_secs_played`, `delta_secs_30d_vs_prior`, `days_since_last_login` |
 
-**Two temporal engineering methods (Bryan Gregory):**
-- *Relative refactoring*: dates converted to days elapsed since prediction period start — ensures features are comparable across Jan/Feb/Mar splits
-- *Absolute method*: raw YYYYMMDD integer retained when calendar date carries independent signal
 
-**Critical bug fixed:** The column `num_uniq` (unique songs played) was incorrectly referenced as `num_uniq_songs`, causing all 5 song-based features to be identically zero. This single error caused LGBM to stop at `best_iteration = 6` (out of 214) and compressed all predictions near the population mean. Fixing it improved campaign ROI from 33% to 44.7%.
+A critical feature-engineering bug (`num_uniq` vs `num_uniq_songs`), caused several listening features to become zero-valued. Fixing the issue improved campaign ROI from 33% to 44.7%.
 
 **Output:** `master_model_table.parquet` (1,963,891 × 59), `inference_snapshot.parquet` (907,471 × 55)
 
@@ -112,25 +222,22 @@ Constructs 54 behavioral and transactional features using strict temporal constr
 
 ### Step 3 — Modeling (`03_Modeling.ipynb`)
 
-Three models trained and evaluated on the February 2017 validation set.
+Three machine learning models trained and evaluated on the February 2017 validation set.
+- Logistic Regression
+- LightGBM
+- XGBoost
 
-**Results:**
+Final solution:
 
-| Model | Val AUC | Val LogLoss | Notes |
-|---|---|---|---|
-| Logistic Regression | 0.702 | 0.606 | Linear baseline — confirms feature signal |
-| LightGBM | 0.766 | 0.290 | Leaf-wise growth, best LogLoss calibration |
-| XGBoost | 0.766 | 0.551 | Level-wise growth, Bryan's `tree_method=hist` |
-| **Ensemble (95/5)** | **0.769** | — | Grid-searched optimal blend |
-| After isotonic calibration | 0.769 | **0.257** | Mean prediction = 0.0899 (exact val churn rate) |
+- 95% LightGBM + 5% XGBoost
+- Isotonic probability calibration
 
-**Why LightGBM + XGBoost?** The two models use different tree growth strategies — leaf-wise (LGBM) vs level-wise (XGB) — meaning their errors are not perfectly correlated. Blending reduces variance. A grid search over blend weights in 5% steps found 95% LGBM + 5% XGB as optimal because LGBM's probability calibration (LogLoss 0.290) is far better than XGBoost's (LogLoss 0.551).
+Final performance:
 
-**Why isotonic calibration, not the 0.75 multiplier?** Top competition solutions multiplied predictions by 0.75 because the March test churn rate (~6.7%) is lower than the validation rate (8.99%). However, this requires knowing the test churn rate in advance — unavailable in real deployment. Isotonic regression learns the optimal mapping from raw predictions to actual outcomes using the validation set alone, producing a calibrated mean of exactly 8.99%.
+- AUC: 0.769
+- LogLoss: 0.257
 
-**Hyperparameter tuning:** Optuna TPE sampler, 100 trials per model (best LGBM trial found at trial 98, confirming 50 trials was insufficient).
-
-**Top features (LGBM gain %):** `registered_via` (42.0%), `registration_date_abs` (12.6%), `total_amount_paid` (9.9%), `days_since_reg` (7.3%), `last_is_auto_renew` (7.0%)
+Hyperparameter tuning was performed using Optuna.
 
 **Output:** `submission.csv` (calibrated), model artifacts, `modeling_metadata.json`
 
@@ -138,114 +245,41 @@ Three models trained and evaluated on the February 2017 validation set.
 
 ### Step 4 — Retention Decision (`04_RetentionDecision.ipynb`)
 
-Translates churn probabilities into per-customer economic decisions.
+Predicted churn probabilities were converted into customer-level retention decisions using:
+- Risk-tier segmentation
+- CLV estimation
+- Voucher cost constraints
+- Expected profit optimization
 
-**Data-driven behavioral weights** — computed from actual churn rate differences in training data (not assumed multipliers):
+Only economically profitable users were selected for targeting.
 
-| Behavior | Churn (flag=1) | Weight | Interpretation |
-|---|---|---|---|
-| Auto-renew active | 5.1% | +0.125 | Committed subscriber |
-| Recent cancellation | 14.6% | −0.225 | About to leave |
-| Active, no cancel | **62.1%** | −0.250 | Passive churner — counterintuitive |
-| Long plan user (≥90d) | **72.4%** | −0.250 | Promotional buyer, not loyal |
-
-The two counterintuitive findings — long-plan users and active-no-cancel users churning far above average — are only discoverable through data-driven analysis. Assumed multipliers would have gotten both backwards.
-
-**Quantile-based risk tiers** (adapts to any model output distribution):
-
-| Tier | P_churn range | Users | Voucher | Base save rate |
-|---|---|---|---|---|
-| Stable | < Q1 = 0.026 | 173,442 | 0% | 0% |
-| Medium | Q1 – Q2 = 0.040 | 210,125 | 5% | 8% |
-| High | Q2 – Q3 = 0.060 | 119,384 | 10% | 15% |
-| Critical | > Q3 = 0.060 | 404,520 | 20% | 7% |
-
-**CLV formula:**
-```
-monthly_revenue   = avg_amount_paid / (avg_plan_days / 30)
-expected_lifetime = 1 / monthly_churn_rate  =  11.1 months
-CLV               = monthly_revenue × expected_lifetime
-Median CLV        = $1,434  |  Max CLV = $21,881
-```
-
-**Per-customer break-even:**
-```
-retention_cost = min(avg_amount_paid × voucher_pct, $200)
-p_threshold    = retention_cost / (CLV × adjusted_save_rate)
-Send voucher only if: P_churn > p_threshold  AND  expected_profit > 0
-```
-
-**Campaign results:**
-
-| Metric | Value |
-|---|---|
-| Users targeted | 84,420 |
-| Campaign cost | $2,517,531 |
-| Expected revenue retained | $3,643,789 |
-| Net benefit | $1,126,258 |
-| ROI | **44.7%** |
-
-**Strategic segments:**
-
-| Segment | Users | Net benefit | Action |
-|---|---|---|---|
-| Critical Selective | 75,787 | $1,105,002 | Max voucher (20%) |
-| High (profitable) | 6,199 | $19,989 | Standard voucher (10%) |
-| Medium (profitable) | 2,434 | $1,267 | Light voucher (5%) |
+Final campaign ROI: `44.7%`
 
 **Output:** `retention_decision_table.csv`, `retention_targets.csv`, `campaign_tracking_template.csv`, `retention_metadata.json`
 
 ---
 
 ### Step 5 — A/B Testing (`05_AB_Testing.ipynb`)
+The retention framework was evaluated using:
 
-Two-part experiment: a retrospective backtest on February 2017 (real labels) and a Monte Carlo simulation on March 2017 (synthetic labels).
+1. A February retrospective backtest with real labels
+2. A March Monte Carlo simulation with synthetic outcomes
 
-**Why February, not March?** March users' membership expiry dates fall in April 2017. Observing renewal outcomes requires April transaction data — which has 0 rows in the public dataset (confirmed: 1,025,980 memberships expire in April but outcomes are unobservable).
+The February experiment showed no significant lift because many targeted users already had very high natural renewal rates.
 
-**Experimental design (February backtest):**
-
-| Arm | Share | Users | Treatment |
-|---|---|---|---|
-| Control (C) | 20% | 163,304 | No voucher |
-| Treatment A (T_A) | 40% | 326,896 | Tier-based voucher (5/10/20%) |
-| Treatment B (T_B) | 40% | 327,188 | Flat 10% voucher |
-
-Arm assignment via MD5 hash of `campaign_id:msno` — deterministic and reproducible across runs.
-
-**Backtest results:**
-
-| Arm | Renewal rate | Lift vs control | p-value | Significant? |
-|---|---|---|---|---|
-| Control | 89.34% | — | — | — |
-| Treatment A | 89.33% | −0.01% | 0.560 | **No** |
-| Treatment B | 89.29% | −0.05% | 0.706 | **No** |
-
-**Why the null result is correct and informative:** Medium and High tier users renew at 99.4–99.5% naturally. No voucher can improve on 99.4% — the ceiling is 100%. The model assigned users with P_churn = 0.03–0.06 to these tiers, but their actual churn is only 0.5%. The null result is a model discrimination diagnostic, not a campaign failure.
-
-**Monte Carlo simulation (March 2017):** Anchored to 6.7% implied March churn rate (from the leaderboard finding that top solutions multiplied predictions by 0.75). Treatment effect applied as Bernoulli draws with Critical-tier save rate = 15%.
-
-| Seed | Simulated churn | T_A lift | p-value | Significant? |
-|---|---|---|---|---|
-| 42 | 6.67% | +0.96% | 0.00000 | Yes |
-| 123 | 6.70% | +1.09% | 0.00000 | Yes |
-| 999 | 6.70% | +1.09% | 0.00000 | Yes |
-| 2017 | 6.72% | +1.09% | 0.00000 | Yes |
-| 7 | 6.70% | +1.00% | 0.00000 | Yes |
-
-Significant across all 5 seeds. Minimum viable Critical save rate: **5%** (lowest tested). The retention framework is economically sound — model discrimination is the only remaining gap.
+The March simulation demonstrated that the framework can produce statistically significant uplift once model discrimination improves.
 
 **Output:** `ab_tracking_table.csv`, `ab_backtest_results.csv`, `ab_test_metadata.json`
 
 ---
 
-## Key Findings
+## 8. Key Findings
 
-1. **Long-plan users churn at 72.4%** — users who purchase 90-day plans are promotional buyers, not loyal subscribers. Long-plan promotions may be attracting the wrong customer cohort.
+1. **Long-plan users churn at 72.4%** — 90-day plans attracted promotional users rather than loyal subscribers.
 
 2. **Active-no-cancel users churn at 62.1%** — these are passive churners approaching natural membership lapse without explicitly cancelling. They look healthy by conventional metrics but are silently departing.
 
-3. **A single column name error (`num_uniq` vs `num_uniq_songs`) was the highest-leverage fix** — it caused LGBM convergence to jump from best_iteration=6 to 214, widened the P_churn distribution from max=0.134 to max=0.181, and improved campaign ROI from 33.0% to 44.7%.
+3. **Feature engineering quality mattered more than model complexity** — fixing one column-name bug increased ROI from 33% to 44.7%.
 
 4. **The A/B null result is a diagnostic** — the model places safe users (99.4% natural renewal) in at-risk tiers. The simulation shows the framework produces +1.05% lift when the model correctly identifies churners.
 
@@ -253,24 +287,31 @@ Significant across all 5 seeds. Minimum viable Critical save rate: **5%** (lowes
 
 ---
 
-## Repository Structure
+## 9. Repository Structure
 
-```
+```text
 .
 ├── 01_Preprocessing.ipynb
 ├── 02_FeatureEngineering.ipynb
 ├── 03_Modeling.ipynb
 ├── 04_RetentionDecision.ipynb
 ├── 05_AB_Testing.ipynb
-├── Data/                        # Raw files (not tracked — download from Kaggle)
-├── Models/                      # Saved model artifacts (not tracked)
+├── EDA_insight.ipynb
+├── Understanding.ipynb
+├── WSDMChurnLabeller.scala
+├── kkbox_pipeline_diagram.md
+├── Data/
+├── Models/
+│   ├── lgbm_model.txt
+│   ├── xgb_model.json
+│   └── ordinal_encoder.pkl
 ├── requirements.txt
-└── README.md
+└── README.md   
 ```
 
 ---
 
-## Requirements
+## 10. Installation
 
 ```bash
 pip install -r requirements.txt
@@ -280,7 +321,7 @@ Key dependencies: `pandas`, `numpy`, `lightgbm`, `xgboost`, `optuna`, `scikit-le
 
 ---
 
-## How to Run
+## 11. How to Run
 
 ```bash
 # 1. Place raw data files in Data/
@@ -293,11 +334,27 @@ jupyter nbconvert --to notebook --execute 05_AB_Testing.ipynb
 ```
 
 ---
+## 12. Limitations
+
+This project is designed as a realistic analytics framework, but several limitations remain.
+
+1. *March outcomes are not directly observable*  
+   March users require April renewal data, which is not available in the public dataset.
+
+2. *The March A/B test is simulation-based*  
+   The simulation depends on assumed save rates and calibrated churn probabilities.
+
+3. *The February backtest is not a true causal experiment*  
+   No real vouchers were sent, so it evaluates targeting quality rather than real treatment effect.
+
+4. *Listening-log coverage is limited*  
+   Transaction and membership features dominate because log data covers only a subset of users.
+
+5. *Voucher save rates are assumptions*  
+   These should be validated through a live campaign before production use.
+---
 
 ## References
 
 - B. Gregory, *Predicting Customer Churn: Extreme Gradient Boosting with Temporal Data*, arXiv:1802.03396, 2018.
-- T. Chen and C. Guestrin, *XGBoost: A Scalable Tree Boosting System*, KDD 2016.
-- G. Ke et al., *LightGBM: A Highly Efficient Gradient Boosting Decision Tree*, NeurIPS 2017.
-- T. Akiba et al., *Optuna: A Next-generation Hyperparameter Optimization Framework*, KDD 2019.
 - KKBox and Kaggle, *WSDM Cup 2018 Churn Prediction Challenge*, 2018.
